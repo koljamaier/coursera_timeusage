@@ -16,6 +16,7 @@ object TimeUsage {
       .builder()
       .appName("Time Usage")
       .config("spark.master", "local")
+      .config("spark.sql.warehouse.dir", "file:///C:/Users/kmaier/IdeaProjects/coursera_timeusage/spark-warehouse")
       .getOrCreate()
 
   // For implicit conversions like converting RDDs to DataFrames
@@ -63,11 +64,11 @@ object TimeUsage {
     * @param columnNames Column names of the DataFrame
     */
   def dfSchema(columnNames: List[String]): StructType = {
-    val fields = columnNames.zipWithIndex.map {
-      case (fieldname, index) => if (index == 0) StructField(fieldname, StringType, nullable = true) else StructField(fieldname, DoubleType, nullable = true)
-    }
-    val schema = StructType(fields)
-    schema
+      val fields = columnNames.zipWithIndex.map {
+        case (fieldname, index) => if (index == 0) StructField(fieldname, StringType, nullable = true) else StructField(fieldname, DoubleType, nullable = true)
+      }
+      val schema = StructType(fields)
+      schema
   }
 
 
