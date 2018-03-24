@@ -33,8 +33,12 @@ object TimeUsage {
     val summaryDf = timeUsageSummary(primaryNeedsColumns, workColumns, otherColumns, initDf)
     //val finalDf = timeUsageGrouped(summaryDf)
     //finalDf.show()
-    val sqlDF = timeUsageGroupedSql(summaryDf)
-    sqlDF.show()
+    //val sqlDF = timeUsageGroupedSql(summaryDf)
+    //sqlDF.show()
+    val typedDS = timeUsageSummaryTyped(summaryDf)
+    typedDS.show()
+    val finalGroupedDS = timeUsageGroupedTyped(typedDS)
+    finalGroupedDS.show()
   }
 
   /** @return The read DataFrame along with its column names. */
@@ -243,8 +247,14 @@ object TimeUsage {
     * Hint: you should use the `getAs` method of `Row` to look up columns and
     * cast them at the same time.
     */
-  def timeUsageSummaryTyped(timeUsageSummaryDf: DataFrame): Dataset[TimeUsageRow] =
-    ???
+  def timeUsageSummaryTyped(timeUsageSummaryDf: DataFrame): Dataset[TimeUsageRow] = {
+
+    timeUsageSummaryDf.map{
+      row => TimeUsageRow(row.getAs[String]("work"), row.getAs[String]("sex"),row.getAs[String]("age"),row.getAs[Double]("primaryNeedsProjection"),
+        row.getAs[Double]("workProjection"),row.getAs[Double]("otherProjection"))
+    }.as[TimeUsageRow]
+
+  }
 
   /**
     * @return Same as `timeUsageGrouped`, but using the typed API when possible
@@ -259,8 +269,26 @@ object TimeUsage {
     */
   def timeUsageGroupedTyped(summed: Dataset[TimeUsageRow]): Dataset[TimeUsageRow] = {
     import org.apache.spark.sql.expressions.scalalang.typed
-    ???
+
+    """
+      | Note that not all the operations have a typed equivalent
+      | round is an example of operations that has no typed equivalent:
+      | it will return a Column that you will have to turn into a TypedColumn by calling .as[Double]
+      | Another example is orderBy, which has no typed equivalent
+      | Make sure your Dataset has a schema because this operation requires one (column names are generally lost when using typed transformations)
+    """.stripMargin
+
+    val groupedDS : Dataset[TimeUsageRow] = summed.groupByKey(timeRow => (timeRow.age,timeRow.sex,timeRow.working))
+      .agg(avg(round($"work",1)).as[Double],avg(round($"primaryNeeds",1)).as[Double],avg(round($"other",1)).as[Double])
+      .map{
+        case((age,sex,working),work,primaryNeeds,other) => TimeUsageRow(working,sex,age,primaryNeeds,work,other)
+      }
+      .orderBy($"work",$"sex",$"age")
+
+    groupedDS
+
   }
+
 }
 
 /**
