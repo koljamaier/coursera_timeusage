@@ -101,19 +101,19 @@ object TimeUsage {
     val primaryNeeds: List[Column] = for {
       i <- List("t01","t03","t11","t1801","t1803")
       j <- columnNames
-      if(j.contains(i))
+      if(j.startsWith(i))
     } yield(col(j))
 
     val work: List[Column] = for {
       i <- List("t01","t03","t11","t1801","t1803")
       j <- columnNames
-      if(j.contains(i))
+      if(j.startsWith(i))
     } yield(col(j))
 
     val leisure: List[Column] = for {
       i <- List("t02","t04","t06","t07","t08","t09","t10","t12","t13","t14","t15","t16","t18")
       j <- columnNames
-      if(j.contains(i))
+      if(j.startsWith(i))
     } yield(col(j))
 
     (primaryNeeds,work,leisure)
@@ -161,6 +161,10 @@ object TimeUsage {
     // more sense for our use case
     // Hint: you can use the `when` and `otherwise` Spark functions
     // Hint: don’t forget to give your columns the expected name with the `as` method
+    df.printSchema()
+    primaryNeedsColumns.foreach(println)
+    workColumns.foreach(println)
+    otherColumns.foreach(println)
     val workingStatusProjection: Column = ???
     val sexProjection: Column = ???
     val ageProjection: Column = ???
