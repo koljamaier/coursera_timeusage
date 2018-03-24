@@ -45,6 +45,9 @@ object TimeUsage {
 
     val data =
       rdd
+        // zu jeder Partition erhalten wir einen Index. Die nullte Partition wird auf jeden Fall die Head-Line enthalten
+        // deshalb wird it.drop(0) für diese Partition angewendet, was diese Line verwirft
+        // it enthält alle Lines für eine Partition (als Iterator)
         .mapPartitionsWithIndex((i, it) => if (i == 0) it.drop(1) else it) // skip the header line
         .map(_.split(",").to[List])
         .map(row)
@@ -75,8 +78,9 @@ object TimeUsage {
   /** @return An RDD Row compatible with the schema produced by `dfSchema`
     * @param line Raw fields
     */
-  def row(line: List[String]): Row =
-    ???
+  def row(line: List[String]): Row = {
+    Row.fromSeq(line.toSeq)
+  }
 
   /** @return The initial data frame columns partitioned in three groups: primary needs (sleeping, eating, etc.),
     *         work and other (leisure activities)
@@ -94,7 +98,25 @@ object TimeUsage {
     *    “t10”, “t12”, “t13”, “t14”, “t15”, “t16” and “t18” (those which are not part of the previous groups only).
     */
   def classifiedColumns(columnNames: List[String]): (List[Column], List[Column], List[Column]) = {
-    ???
+    val primaryNeeds: List[Column] = for {
+      i <- List("t01","t03","t11","t1801","t1803")
+      j <- columnNames
+      if(j.contains(i))
+    } yield(col(j))
+
+    val work: List[Column] = for {
+      i <- List("t01","t03","t11","t1801","t1803")
+      j <- columnNames
+      if(j.contains(i))
+    } yield(col(j))
+
+    val leisure: List[Column] = for {
+      i <- List("t02","t04","t06","t07","t08","t09","t10","t12","t13","t14","t15","t16","t18")
+      j <- columnNames
+      if(j.contains(i))
+    } yield(col(j))
+
+    (primaryNeeds,work,leisure)
   }
 
   /** @return a projection of the initial DataFrame such that all columns containing hours spent on primary needs
